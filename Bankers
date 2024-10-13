@@ -1,1 +1,194 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int nprocesses = 5, nresources = 4;
+vector<int> seq;
+
+typedef struct {
+    int id;
+    vector<int> Max;
+    vector<int> Allocation;
+    vector<int> Need;
+    bool status;
+} process;
+
+bool IsSafe(vector<process> processes, vector<int> available) {
+    int finished = nprocesses;
+    int j = 0;
+    while (finished != 0) {
+        int counter = finished;
+        for (auto i = processes.begin(); i != processes.end(); i++) {
+            if ((*i).status == false) {
+                for (j = 0; j < nresources; j++)
+                    if ((*i).Need[j] > available[j])
+                        break;
+                if (j == nresources) {
+                    finished--;
+                    (*i).status = true;
+                    for (int k = 0; k < nresources; k++)
+                        available[k] += (*i).Allocation[k];
+                    seq.push_back((*i).id);
+                }
+            }
+        }
+        if (counter == finished) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Requset(vector<process> processes, vector<int> available, int p, vector<int> req) {
+    int j = 0;
+    for (j = 0; j < nresources; j++)
+        if (req[j] > available[j] || req[j] > processes[p].Need[j])
+            break;
+    if (j != nresources)
+        return false;
+
+    for (j = 0; j < nresources; j++) {
+        processes[p].Allocation[j] += req[j];
+        processes[p].Need[j] -= req[j];
+        available[j] -= req[j];
+    }
+    
+    cout << "\n\tNeed Matrix";
+    for (int j = -1; j < nprocesses; j++) {
+        cout << endl;
+        if (j == -1) {
+            cout << "  \t";
+            for (int i = 0; i < nresources; i++) {
+                cout << "R" << i << "\t";
+            }
+            continue;
+        }
+        cout << "P" << j << "\t";
+        for (int i = 0; i < nresources; i++)
+            cout << processes[j].Need[i] << "\t";
+    }
+    cout << endl << endl;
+    
+    return IsSafe(processes, available);
+}
+
+int main() {
+	#ifndef ONLINE_JUDGE
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
+    #endif
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
+    vector<int> available(nresources);
+    vector<process> processes(nprocesses);
+    vector<int> req(nresources, 0);
+    int choice;
+    int p;
+    char sysexit;
+    do {
+        seq.clear();
+        available.clear();
+        processes.clear();
+        
+        cout << "\nEnter num of resources : ";
+        cin >> nresources;
+        cout << "Enter num of processes : ";
+        cin >> nprocesses;
+
+        available.resize(nresources);
+        processes.resize(nprocesses);
+
+        for (int i = 0; i < nprocesses; i++) {
+            processes[i].Max.resize(nresources);
+            processes[i].Allocation.resize(nresources);
+            processes[i].Need.resize(nresources);
+            processes[i].id = i;
+            processes[i].status = false;
+
+            cout << "Enter Allocation array for P" << i << " : ";
+            for (int j = 0; j < nresources; j++) {
+                cin >> processes[i].Allocation[j];
+            }
+        }
+
+        for (int i = 0; i < nprocesses; i++) {
+            cout << "Enter Max array for P" << i << " : ";
+            for (int j = 0; j < nresources; j++) {
+                cin >> processes[i].Max[j];
+                processes[i].Need[j] = processes[i].Max[j] - processes[i].Allocation[j];
+            }
+        }
+
+        cout << "\nEnter Available array  " << endl;
+        for (int j = 0; j < nresources; j++)
+            cin >> available[j];
+
+        cout << "\n\tNeed Matrix";
+        for (int j = -1; j < nprocesses; j++) {
+            cout << endl;
+            if (j == -1) {
+                cout << "  \t";
+                for (int i = 0; i < nresources; i++) {
+                    cout << "R" << i << "\t";
+                }
+                continue;
+            }
+            cout << "P" << j << "\t";
+            for (int i = 0; i < nresources; i++)
+                cout << processes[j].Need[i] << "\t";
+        }
+        cout << endl;
+
+        cout << "\nDo you want to check safety? (1-yes 2-no)\n";
+        cout << "your choice : ";
+        cin >> choice;
+        if (choice == 1) {
+            if (IsSafe(processes, available)) {
+                cout << "Yes , Safe state <";
+                for (int i = 0; i < nprocesses; i++) {
+                    cout << "P" << seq[i];
+                    if (i != nprocesses - 1)
+                        cout << ",";
+                    else
+                        cout << ">";
+                }
+            } else {
+                cout << "No";
+            }
+        }
+        cout << endl;
+
+        req.clear();
+        req.resize(nresources, 0);
+        cout << "\nDo you want to make request? (1-yes 2-no)\n";
+        cout << "your choice : ";
+        cin >> choice;
+        if (choice == 1) {
+            cout << "enter index of process: ";
+            cin >> p;
+            cout << "enter request of process " << p << " : ";
+            for (int i = 0; i < nresources; i++)
+                cin >> req[i];
+            if (Requset(processes, available, p, req)) {
+                cout << "Yes , Safe state <";
+                cout << "P" << p << "req,";
+                for (int i = 0; i < nprocesses; i++) {
+                    cout << "P" << seq[i];
+                    if (i != nprocesses - 1)
+                        cout << ",";
+                    else
+                        cout << ">";
+                }
+            } else {
+                cout << "No";
+            }
+        }
+
+        cout << "\n\nDo you want to test again?(y/n)\n";
+        cin >> sysexit;
+    } while (sysexit == 'y' || sysexit == 'Y');
+
+    return 0;
+}
 
